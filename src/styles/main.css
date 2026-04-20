@@ -275,6 +275,113 @@ dd {
   color: #f8fafc;
 }
 
+/* Collapsible reasoning panel (D-19) */
+.reasoning-toggle {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  margin-left: auto;
+}
+
+.panel--collapsed .reasoning-log {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 1rem;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.reasoning-log {
+  max-height: 60vh;
+  overflow-y: auto;
+  transition: max-height 0.3s ease;
+}
+
+/* Structured reasoning entries */
+.reasoning-entry {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.reasoning-entry__header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.reasoning-entry__waypoint {
+  font-weight: 600;
+  color: #38bdf8;
+  font-size: 0.85rem;
+}
+
+.reasoning-entry__source {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  letter-spacing: 0.05em;
+}
+
+.reasoning-entry__source--api {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.reasoning-entry__source--mock {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.reasoning-entry__source--fallback {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.reasoning-entry__source--system {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.reasoning-entry__latency {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.reasoning-entry__perception,
+.reasoning-entry__decision,
+.reasoning-entry__rationale {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin-top: 0.3rem;
+}
+
+.reasoning-entry__perception strong,
+.reasoning-entry__decision strong,
+.reasoning-entry__rationale strong {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  margin-right: 0.3rem;
+}
+
+.reasoning-entry__rationale {
+  font-style: italic;
+  color: #a1a1aa;
+}
+
+/* Badge variants */
+.badge--warning {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
 @media (max-width: 1120px) {
   .status-grid,
   .workspace {

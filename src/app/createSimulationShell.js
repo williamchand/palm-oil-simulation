@@ -1,6 +1,7 @@
 import plantationGridUrl from '../../assets/plantation-grid.svg?url';
 import { getEnvironmentConfig } from '../config/environment.js';
 import { createGemmaClient } from '../services/gemmaClient.js';
+import { createAiWaypointLoop } from '../simulation/aiWaypointLoop.js';
 import { createMapPanel } from '../map/createMapPanel.js';
 import { createSelectionController } from '../map/selectionController.js';
 import { createDroneScene } from '../three/createDroneScene.js';
@@ -8,16 +9,16 @@ import { createSimulationState } from '../simulation/createSimulationState.js';
 import { generatePlantation } from '../world/generatePlantation.js';
 import { createSweepPath } from '../simulation/createSweepPath.js';
 import { sampleTerrainPath } from '../simulation/sampleTerrainPath.js';
+import { createReasoningPanel } from './reasoningPanel.js';
 
 function buildShellMarkup(config) {
   const cesiumState = config.cesiumToken ? 'Configured' : 'Pending token';
-  const gemmaState = config.gemmaApiUrl ? 'Configured' : 'Placeholder mode';
 
   return `
     <div class="shell">
       <header class="shell__header">
         <div>
-          <p class="eyebrow">Phase 2 Core Infrastructure</p>
+          <p class="eyebrow">Phase 3 AI Integration</p>
           <h1>Gemma 4 Autonomous Drone Simulation</h1>
           <p class="shell__subtitle">
             Area selection, plantation generation, and automated sweep path.
@@ -105,7 +106,7 @@ function buildShellMarkup(config) {
               <p class="eyebrow">AI Reasoning</p>
               <h2 id="reasoning-panel-title">Decision log</h2>
             </div>
-            <span class="badge badge--muted">Placeholder mode</span>
+            <span class="badge badge--muted" id="ai-badge">${config.gemmaApiUrl ? 'AI Configured' : 'Mock Mode'}</span>
           </div>
           <ol id="reasoning-log" class="reasoning-log" aria-live="polite"></ol>
         </aside>
@@ -114,29 +115,15 @@ function buildShellMarkup(config) {
   `;
 }
 
-function appendReasoning(logNode, entries) {
-  logNode.replaceChildren();
-  entries.forEach((entry) => {
-    const item = document.createElement('li');
-    item.className = 'reasoning-log__item';
-    item.innerHTML = `
-      <span>${entry.label}</span>
-      <strong>${entry.message}</strong>
-      <small>${entry.detail}</small>
-    `;
-    logNode.appendChild(item);
-  });
-}
-
 export function createSimulationShell(root) {
   const config = getEnvironmentConfig();
   const gemmaClient = createGemmaClient(config);
   const simState = createSimulationState();
+  let aiLoop = null;
 
   root.innerHTML = buildShellMarkup(config);
 
   // DOM references
-  const reasoningLog = root.querySelector('#reasoning-log');
   const startBtn = root.querySelector('[data-action="start"]');
   const stopBtn = root.querySelector('[data-action="stop"]');
   const resetBtn = root.querySelector('[data-action="reset"]');
@@ -153,7 +140,22 @@ export function createSimulationShell(root) {
   const mapInstruction = root.querySelector('#map-instruction');
   const mapInstructionDetail = root.querySelector('#map-instruction-detail');
 
-  appendReasoning(reasoningLog, gemmaClient.getBootSequence());
+  // Initialize structured reasoning panel (replaces static appendReasoning)
+  const reasoningPanelEl = root.querySelector('.panel--reasoning');
+  const reasoningPanel = createReasoningPanel(reasoningPanelEl, simState);
+
+  // Set initial AI status based on client mode
+  simState.setAiStatus(gemmaClient.getMode() === 'api' ? 'idle' : 'mock');
+
+  // Add boot reasoning entry
+  simState.addReasoningEntry({
+    waypointIndex: -1,
+    perception: null,
+    decision: null,
+    source: gemmaClient.getMode(),
+    latencyMs: 0,
+    timestamp: Date.now()
+  });
 
   // Initialize scene controller
   const sceneController = createDroneScene(root.querySelector('#scene-panel'));
@@ -169,15 +171,9 @@ export function createSimulationShell(root) {
       selectionController = createSelectionController(viewer, {
         onConfirm: (selection) => {
           simState.setSelection(selection);
-          appendReasoning(reasoningLog, [
-            { label: 'Selection', message: `Area confirmed: ${selection.areaKm2.toFixed(2)} km²`, detail: `Seed: ${selection.seed}` }
-          ]);
         },
         onError: (error) => {
           simState.setError(error);
-          appendReasoning(reasoningLog, [
-            { label: 'Error', message: error, detail: 'Please select a smaller area.' }
-          ]);
         }
       });
       selectionController.enable();
@@ -235,11 +231,14 @@ export function createSimulationShell(root) {
     }
   });
 
-  // Drone animation along route
-  function animateDrone(route, onComplete) {
+  // Drone animation along route with AI waypoint loop integration
+  function animateDrone(route, plantation, onComplete) {
     let waypointIndex = 0;
     let progress = 0;
     const speed = 0.5; // Units per frame
+
+    // Create AI loop for this animation run
+    aiLoop = createAiWaypointLoop(gemmaClient, simState);
 
     function tick() {
       if (simState.getState().phase !== 'running') {
@@ -267,6 +266,10 @@ export function createSimulationShell(root) {
         waypointIndex++;
         progress = 0;
         simState.setCurrentWaypoint(waypointIndex);
+
+        // Fire-and-forget AI inference at this waypoint (D-13: async, non-blocking)
+        const currentWaypoint = waypoints[waypointIndex];
+        aiLoop.onWaypoint(currentWaypoint, plantation, route, waypointIndex);
       }
 
       const x = current.x + dx * progress;
@@ -287,9 +290,6 @@ export function createSimulationShell(root) {
     if (!state.selection) return;
 
     simState.setPhase('generating');
-    appendReasoning(reasoningLog, [
-      { label: 'Generate', message: 'Creating plantation layout...', detail: `Seed: ${state.selection.seed}` }
-    ]);
 
     // Generate plantation
     const plantation = generatePlantation(state.selection);
@@ -297,10 +297,6 @@ export function createSimulationShell(root) {
     
     // Rebuild scene
     sceneController.rebuild(plantation);
-    
-    appendReasoning(reasoningLog, [
-      { label: 'Scene', message: `${plantation.metadata.treeCount} trees rendered`, detail: 'Calculating sweep path...' }
-    ]);
 
     // Generate route
     let route = createSweepPath(plantation);
@@ -313,16 +309,9 @@ export function createSimulationShell(root) {
     simState.setRoute(route);
     simState.setPhase('running');
 
-    appendReasoning(reasoningLog, [
-      { label: 'Flight', message: `${route.waypoints.length} waypoints`, detail: `Est. duration: ${Math.round(route.estimatedDuration)}s` },
-      { label: 'Start', message: 'Autonomous sweep initiated', detail: 'Drone following terrain-aware path' }
-    ]);
-
-    // Start animation
-    animateDrone(route, () => {
-      appendReasoning(reasoningLog, [
-        { label: 'Complete', message: 'Plantation scan finished', detail: `Coverage: ${simState.getState().coverage}%` }
-      ]);
+    // Start animation with AI pipeline
+    animateDrone(route, plantation, () => {
+      simState.setAiStatus('idle');
     });
   });
 
@@ -331,10 +320,8 @@ export function createSimulationShell(root) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
+    if (aiLoop) { aiLoop.stop(); aiLoop = null; }
     simState.setPhase('paused');
-    appendReasoning(reasoningLog, [
-      { label: 'Pause', message: 'Simulation paused', detail: 'Press Start to resume' }
-    ]);
   });
 
   resetBtn.addEventListener('click', () => {
@@ -342,12 +329,26 @@ export function createSimulationShell(root) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
+    if (aiLoop) { aiLoop.stop(); aiLoop = null; }
     simState.reset();
     if (selectionController) {
       selectionController.clear();
     }
     sceneController.rebuild(null); // Clear scene
-    appendReasoning(reasoningLog, gemmaClient.getBootSequence());
+
+    // Clear reasoning panel display and re-add boot entry
+    if (reasoningPanelEl._reasoningPanel) {
+      reasoningPanelEl._reasoningPanel.clear();
+    }
+    simState.setAiStatus(gemmaClient.getMode() === 'api' ? 'idle' : 'mock');
+    simState.addReasoningEntry({
+      waypointIndex: -1,
+      perception: null,
+      decision: null,
+      source: gemmaClient.getMode(),
+      latencyMs: 0,
+      timestamp: Date.now()
+    });
   });
 }
 
