@@ -46,7 +46,7 @@ global.performance = {
 vi.mock('three', () => ({
   Scene: vi.fn(() => ({ add: vi.fn(), remove: vi.fn(), background: null })),
   Color: vi.fn(),
-  PerspectiveCamera: vi.fn(() => ({ position: { set: vi.fn() }, lookAt: vi.fn(), aspect: 1, updateProjectionMatrix: vi.fn() })),
+  PerspectiveCamera: vi.fn(() => ({ position: { set: vi.fn(), lerp: vi.fn(), x: 0, y: 0, z: 0 }, lookAt: vi.fn(), aspect: 1, updateProjectionMatrix: vi.fn() })),
   WebGLRenderer: vi.fn(() => ({ 
     setPixelRatio: vi.fn(), 
     setSize: vi.fn(), 
@@ -56,10 +56,12 @@ vi.mock('three', () => ({
   AmbientLight: vi.fn(),
   PlaneGeometry: vi.fn(() => ({ dispose: vi.fn(), parameters: { width: 10, height: 10 } })),
   MeshStandardMaterial: vi.fn(() => ({ dispose: vi.fn() })),
-  Mesh: vi.fn(() => ({ rotation: { x: 0 }, position: { set: vi.fn(), x: 0, y: 0 }, name: '', geometry: null, material: null })),
+  MeshBasicMaterial: vi.fn(() => ({ dispose: vi.fn() })),
+  Mesh: vi.fn(() => ({ rotation: { x: 0 }, position: { set: vi.fn(), x: 0, y: 0 }, name: '', geometry: null, material: null, visible: true })),
   BoxGeometry: vi.fn(() => ({ dispose: vi.fn() })),
   Group: vi.fn(() => ({ add: vi.fn(), position: { set: vi.fn(), y: 0, x: 0 }, rotation: { y: 0 }, name: '' })),
-  CanvasTexture: vi.fn(() => ({ colorSpace: '', repeat: { set: vi.fn() }, wrapS: 0, wrapT: 0 })),
+  CanvasTexture: vi.fn(() => ({ colorSpace: '', repeat: { set: vi.fn() }, wrapS: 0, wrapT: 0, needsUpdate: false })),
+  Vector3: vi.fn(() => ({ set: vi.fn(), x: 0, y: 0, z: 0 })),
   RepeatWrapping: 1000,
   SRGBColorSpace: 'srgb'
 }));
@@ -70,6 +72,24 @@ vi.mock('../../../src/three/helpers/sceneBuilder.js', () => ({
     rebuild: vi.fn(),
     clear: vi.fn(),
     getPlantationBounds: vi.fn(() => ({ width: 10, height: 10, centerX: 5, centerZ: 5 }))
+  }))
+}));
+
+// Mock heatmapOverlay
+vi.mock('../../../src/three/helpers/heatmapOverlay.js', () => ({
+  createHeatmapOverlay: vi.fn(() => ({
+    mesh: { name: 'heatmapOverlay' },
+    reveal: vi.fn(),
+    dispose: vi.fn()
+  }))
+}));
+
+// Mock pathTrail
+vi.mock('../../../src/three/helpers/pathTrail.js', () => ({
+  createPathTrail: vi.fn(() => ({
+    group: { name: 'pathTrail' },
+    addPoint: vi.fn(),
+    dispose: vi.fn()
   }))
 }));
 

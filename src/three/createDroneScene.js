@@ -11,9 +11,12 @@ import {
   RepeatWrapping,
   Scene,
   SRGBColorSpace,
+  Vector3,
   WebGLRenderer
 } from 'three';
 import { createSceneBuilder } from './helpers/sceneBuilder.js';
+import { createHeatmapOverlay } from './helpers/heatmapOverlay.js';
+import { createPathTrail } from './helpers/pathTrail.js';
 
 function createGroundTexture() {
   const canvas = document.createElement('canvas');
@@ -71,7 +74,7 @@ function createDrone() {
  * Creates 3D drone scene with controller for rebuild and animation.
  * 
  * @param {HTMLElement} container
- * @returns {{rebuild: Function, setDronePosition: Function, stop: Function, resume: Function}}
+ * @returns {{rebuild: Function, setDronePosition: Function, stop: Function, resume: Function, addTrailPoint: Function, revealHeatmap: Function, resetVisualization: Function}}
  */
 export function createDroneScene(container) {
   const scene = new Scene();
@@ -110,6 +113,11 @@ export function createDroneScene(container) {
 
   const sceneBuilder = createSceneBuilder(scene);
 
+  let heatmapOverlay = null;
+  let pathTrail = null;
+  const cameraTarget = new Vector3();
+  let autoFollowEnabled = false;
+
   let animationActive = true;
   let routeWaypoints = null;
   let currentWaypointIndex = 0;
@@ -127,6 +135,17 @@ export function createDroneScene(container) {
       drone.position.x = Math.sin(performance.now() * 0.001) * 0.35;
     } else {
       // Route-based animation handled by startAnimation
+    }
+
+    // Auto-follow camera: lerp toward drone position each frame (D-26)
+    if (autoFollowEnabled) {
+      cameraTarget.set(
+        drone.position.x + 8,
+        drone.position.y + 6,
+        drone.position.z + 10
+      );
+      camera.position.lerp(cameraTarget, 0.02);
+      camera.lookAt(drone.position.x, drone.position.y, drone.position.z);
     }
 
     renderer.render(scene, camera);
@@ -153,6 +172,31 @@ export function createDroneScene(container) {
       // Hide default ground when plantation is loaded
       defaultGround.visible = false;
       sceneBuilder.rebuild(plantationData);
+
+      // Dispose previous heatmap/trail before creating new ones
+      if (heatmapOverlay) {
+        scene.remove(heatmapOverlay.mesh);
+        heatmapOverlay.dispose();
+        heatmapOverlay = null;
+      }
+      if (pathTrail) {
+        scene.remove(pathTrail.group);
+        pathTrail.dispose();
+        pathTrail = null;
+      }
+
+      if (plantationData && plantationData.trees && plantationData.trees.length > 0) {
+        // Create heatmap overlay
+        heatmapOverlay = createHeatmapOverlay(plantationData);
+        scene.add(heatmapOverlay.mesh);
+
+        // Create path trail
+        pathTrail = createPathTrail();
+        scene.add(pathTrail.group);
+      }
+
+      // Camera positioned by bounds-based logic; auto-follow starts on simulation run
+      autoFollowEnabled = false;
 
       // Adjust camera to fit plantation
       const bounds = sceneBuilder.getPlantationBounds();
@@ -194,6 +238,50 @@ export function createDroneScene(container) {
         animationActive = true;
         animate();
       }
+    },
+
+    /**
+     * Adds a point to the drone path trail.
+     * First call enables auto-follow camera.
+     * @param {number} x - World X in meters
+     * @param {number} z - World Z in meters
+     * @param {number} altitude - Altitude in meters
+     * @param {'scan'|'turn'|'transit'} action
+     * @param {boolean} isAnomaly
+     */
+    addTrailPoint(x, z, altitude, action, isAnomaly) {
+      if (!pathTrail) return;
+      pathTrail.addPoint(x, z, altitude, action, isAnomaly);
+      autoFollowEnabled = true;
+    },
+
+    /**
+     * Reveals a scanned region on the heatmap overlay.
+     * @param {number} waypointX - Waypoint X in meters
+     * @param {number} waypointY - Waypoint Y in meters
+     * @param {import('../types/plantation.js').Tree[]} trees - Nearby trees
+     * @param {Array<{x: number, y: number}>} anomalies - Anomaly positions
+     */
+    revealHeatmap(waypointX, waypointY, trees, anomalies) {
+      if (!heatmapOverlay) return;
+      heatmapOverlay.reveal(waypointX, waypointY, trees, anomalies);
+    },
+
+    /**
+     * Resets visualization state (heatmap + trail).
+     */
+    resetVisualization() {
+      if (heatmapOverlay) {
+        scene.remove(heatmapOverlay.mesh);
+        heatmapOverlay.dispose();
+        heatmapOverlay = null;
+      }
+      if (pathTrail) {
+        scene.remove(pathTrail.group);
+        pathTrail.dispose();
+        pathTrail = null;
+      }
+      autoFollowEnabled = false;
     }
   };
 }
