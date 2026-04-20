@@ -1,90 +1,94 @@
 # Gemma 4 Autonomous Drone Simulation
 
-Phase 1 scaffold for a browser-based palm plantation simulation that combines:
+Browser-based simulation of an autonomous drone surveying palm oil plantations. Built for a 48-hour hackathon. Combines **CesiumJS** geospatial mapping, **Three.js** 3D visualization, and **Gemma 4** AI for real-time decision-making.
 
-- **ArcGIS** for map-driven area selection
-- **Three.js** for a live 3D drone preview
-- **Gemma 4 integration hooks** for future autonomous reasoning
+## Features
 
-The current implementation establishes the development environment, project structure, and an initial UI shell with map, scene, and reasoning panels.
+- 🗺️ **Interactive Area Selection** — Draw rectangles on a CesiumJS globe to define plantation boundaries
+- 🌴 **Deterministic Plantation Generation** — Seeded PRNG creates identical layouts from identical selections
+- 🚁 **Automated Drone Sweep** — Lawnmower/boustrophedon pattern with terrain-aware altitude
+- 🤖 **AI-Powered Decisions** — Gemma 4 analyzes per-waypoint perception data (tree health, ripeness) to modify altitude, flag anomalies, or adjust priorities
+- 🌫️ **Fog-of-War Heatmap** — Progressive reveal showing scanned vs unscanned areas
+- 📍 **Color-Coded Path Trail** — Visual trail with scan/transit/anomaly markers
+- 📊 **AI Reasoning Panel** — Collapsible panel showing structured perception→decision→rationale entries
+- 🎥 **Auto-Follow Camera** — Smooth lerp camera tracking the drone through the 3D scene
+- 🔄 **Graceful Degradation** — If AI API unavailable, contextual mock decisions keep the demo running
 
-## Current status
+## Quick Start
 
-Phase 1 is implemented as a setup milestone:
-
-- Vite-based development workflow
-- Initial dashboard layout and controls
-- Guarded ArcGIS initialization behind `VITE_ARCGIS_API_KEY`
-- Three.js placeholder drone scene to verify WebGL rendering
-- Gemma endpoint configuration boundary for later AI integration phases
-
-## Project structure
-
-```text
-.
-├── assets/                  Static design assets used by the UI shell
-├── docs/                    Reserved for supporting documentation artifacts
-├── public/                  Static public assets served by Vite
-├── src/
-│   ├── app/                 UI shell composition
-│   ├── config/              Environment and runtime config
-│   ├── map/                 ArcGIS setup and placeholder behavior
-│   ├── services/            Future AI/service integration boundaries
-│   ├── styles/              Global application styles
-│   └── three/               Three.js scene setup
-└── .planning/               GSD planning, roadmap, and execution artifacts
+```bash
+git clone <repo-url>
+cd palm-oil-simulation
+npm install
+npm run dev
 ```
 
-## Requirements
+Open the URL shown in terminal (typically http://localhost:5173).
 
-- Node.js 18+
-- npm
-- Optional ArcGIS API key for a live basemap
-- Optional Gemma API URL/key for later phases
+## Environment Variables
 
-## Environment variables
-
-Copy `.env.example` to `.env.local` and fill in the values you have:
+Copy `.env.example` to `.env.local`:
 
 ```bash
 cp .env.example .env.local
 ```
 
 | Variable | Required | Purpose |
-| --- | --- | --- |
-| `VITE_ARCGIS_API_KEY` | No | Enables the live ArcGIS map view |
-| `VITE_GEMMA_API_URL` | No | Reserved endpoint for future Gemma integration |
-| `VITE_GEMMA_API_KEY` | No | Reserved auth key for future Gemma integration |
+|----------|----------|---------|
+| `VITE_CESIUM_ION_TOKEN` | No | Enables CesiumJS globe with terrain (free tier at cesium.com/ion) |
+| `VITE_GEMMA_API_URL` | No | REST endpoint for Gemma 4 inference (Modal/custom) |
+| `VITE_GEMMA_API_KEY` | No | Auth key for Gemma API |
 
-If `VITE_ARCGIS_API_KEY` is missing, the app shows a stable placeholder panel instead of failing.
+The app runs fully without any env vars — CesiumJS shows a placeholder panel, AI uses contextual mock decisions.
 
-## Getting started
+## Architecture
 
-```bash
-npm install
-npm run dev
+```
+src/
+├── app/                 Shell orchestrator + reasoning panel UI
+├── config/              Environment configuration
+├── map/                 CesiumJS map + rectangle selection controller
+├── services/            Gemma API client, perception builder, prompt builder, decision engine
+├── simulation/          State manager, sweep path, terrain sampling, AI waypoint loop
+├── three/               3D scene controller + helpers (heatmap, path trail, plantation mesh)
+│   └── helpers/         Heatmap overlay, path trail renderer, scan markers
+├── types/               JSDoc type contracts (selection, plantation, route, AI)
+├── world/               Deterministic plantation generator + seeded PRNG
+└── styles/              Global CSS
 ```
 
-Open the local Vite URL shown in the terminal.
+**Data Flow:** User draws selection → plantation generated deterministically → sweep path computed → drone animates along waypoints → at each scan point: perception built → AI inference (real or mock) → decision applied → heatmap revealed → trail extended.
 
-## Available scripts
+## Tech Stack
 
-- `npm run dev` — start the local development server with hot reload
-- `npm run build` — create a production build
-- `npm run preview` — preview the production build locally
+- **Build:** Vite 5
+- **3D:** Three.js
+- **Maps:** CesiumJS
+- **AI:** Gemma 4 via REST API (with mock fallback)
+- **Tests:** Vitest (145+ unit & integration tests)
+- **Language:** Vanilla JavaScript (ES modules, JSDoc types)
 
-## What Phase 1 delivers
+## Scripts
 
-1. Development environment and scripts
-2. Core folder structure
-3. Initial HTML/CSS/JS scaffolding
-4. UI wireframe with map, 3D, and AI reasoning placeholders
-5. Safe setup path for future ArcGIS and Gemma integration
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server with hot reload |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview production build locally |
+| `npm test` | Run all tests |
+| `npm run test:watch` | Run tests in watch mode |
 
-## Next implementation targets
+## Demo Flow
 
-- Phase 2: area selection and plantation generation
-- Phase 3: Gemma-powered drone reasoning
-- Phase 4: real-time visualization overlays
-- Phase 5: end-to-end integration and demo hardening
+1. Open the app — CesiumJS globe (or placeholder) loads with 3D scene panel
+2. Draw a rectangle on the map to select a plantation area
+3. Click **Start Simulation** — plantation generates, drone begins sweep
+4. Watch the AI reasoning panel for real-time decisions
+5. Observe fog-of-war heatmap revealing scanned areas
+6. Drone path shows color-coded trail with anomaly markers
+7. Simulation completes with full coverage — click **Reset** to try again
+
+## License
+
+See [LICENSE](./LICENSE).
 
