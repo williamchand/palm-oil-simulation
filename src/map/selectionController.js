@@ -1,4 +1,4 @@
-import { Rectangle, Color, CallbackProperty, ScreenSpaceEventHandler, ScreenSpaceEventType, Cartographic, Math as CesiumMath } from 'cesium';
+import * as Cesium from 'cesium';
 import { normalizeSelection, validateBounds } from '../types/selection.js';
 
 export function createSelectionController(viewer, callbacks = {}) {
@@ -10,7 +10,7 @@ export function createSelectionController(viewer, callbacks = {}) {
   let rectangleEntity = null;
   let confirmedSelection = null;
 
-  const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
   function updateRectangleEntity() {
     if (rectangleEntity) {
@@ -20,10 +20,10 @@ export function createSelectionController(viewer, callbacks = {}) {
 
     rectangleEntity = viewer.entities.add({
       rectangle: {
-        coordinates: new CallbackProperty(() => currentRectangle, false),
-        material: Color.fromCssColorString('#38bdf8').withAlpha(0.15),
+        coordinates: new Cesium.CallbackProperty(() => currentRectangle, false),
+        material: Cesium.Color.fromCssColorString('#38bdf8').withAlpha(0.15),
         outline: true,
-        outlineColor: Color.fromCssColorString('#38bdf8'),
+        outlineColor: Cesium.Color.fromCssColorString('#38bdf8'),
         outlineWidth: 2
       }
     });
@@ -34,11 +34,11 @@ export function createSelectionController(viewer, callbacks = {}) {
       const cartesian = viewer.camera.pickEllipsoid(click.position, viewer.scene.globe.ellipsoid);
       if (!cartesian) return;
       
-      const carto = Cartographic.fromCartesian(cartesian);
-      startPosition = { lon: CesiumMath.toDegrees(carto.longitude), lat: CesiumMath.toDegrees(carto.latitude) };
+      const carto = Cesium.Cartographic.fromCartesian(cartesian);
+      startPosition = { lon: Cesium.Math.toDegrees(carto.longitude), lat: Cesium.Math.toDegrees(carto.latitude) };
       isDrawing = true;
       confirmedSelection = null;
-    }, ScreenSpaceEventType.LEFT_DOWN);
+    }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
 
     handler.setInputAction((movement) => {
       if (!isDrawing || !startPosition) return;
@@ -46,28 +46,28 @@ export function createSelectionController(viewer, callbacks = {}) {
       const cartesian = viewer.camera.pickEllipsoid(movement.endPosition, viewer.scene.globe.ellipsoid);
       if (!cartesian) return;
 
-      const carto = Cartographic.fromCartesian(cartesian);
-      const endLon = CesiumMath.toDegrees(carto.longitude);
-      const endLat = CesiumMath.toDegrees(carto.latitude);
+      const carto = Cesium.Cartographic.fromCartesian(cartesian);
+      const endLon = Cesium.Math.toDegrees(carto.longitude);
+      const endLat = Cesium.Math.toDegrees(carto.latitude);
 
-      currentRectangle = Rectangle.fromDegrees(
+      currentRectangle = Cesium.Rectangle.fromDegrees(
         Math.min(startPosition.lon, endLon),
         Math.min(startPosition.lat, endLat),
         Math.max(startPosition.lon, endLon),
         Math.max(startPosition.lat, endLat)
       );
       updateRectangleEntity();
-    }, ScreenSpaceEventType.MOUSE_MOVE);
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
     handler.setInputAction(() => {
       if (!isDrawing || !currentRectangle) return;
       isDrawing = false;
       
       const bounds = {
-        west: CesiumMath.toDegrees(currentRectangle.west),
-        south: CesiumMath.toDegrees(currentRectangle.south),
-        east: CesiumMath.toDegrees(currentRectangle.east),
-        north: CesiumMath.toDegrees(currentRectangle.north)
+        west: Cesium.Math.toDegrees(currentRectangle.west),
+        south: Cesium.Math.toDegrees(currentRectangle.south),
+        east: Cesium.Math.toDegrees(currentRectangle.east),
+        north: Cesium.Math.toDegrees(currentRectangle.north)
       };
 
       const validation = validateBounds(bounds);
@@ -79,7 +79,7 @@ export function createSelectionController(viewer, callbacks = {}) {
 
       confirmedSelection = normalizeSelection(currentRectangle);
       callbacks.onConfirm?.(confirmedSelection);
-    }, ScreenSpaceEventType.LEFT_UP);
+    }, Cesium.ScreenSpaceEventType.LEFT_UP);
   }
 
   function disable() {

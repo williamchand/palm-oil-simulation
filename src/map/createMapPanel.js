@@ -1,4 +1,4 @@
-import { Viewer, Ion, createWorldTerrainAsync, Rectangle } from 'cesium';
+import * as Cesium from 'cesium';
 
 function createMessage(title, description) {
   const wrapper = document.createElement('div');
@@ -22,17 +22,17 @@ export async function createMapPanel(container, config) {
   }
 
   try {
-    Ion.defaultAccessToken = config.cesiumToken;
+    Cesium.Ion.defaultAccessToken = config.cesiumToken;
 
     // Try terrain first, fall back to default if Ion services unavailable
     let terrainOpts = {};
     try {
-      terrainOpts.terrain = await createWorldTerrainAsync();
+      terrainOpts.terrain = await Cesium.createWorldTerrainAsync();
     } catch (terrainErr) {
       console.warn('Cesium terrain unavailable, using default ellipsoid:', terrainErr.message);
     }
     
-    const viewer = new Viewer(container, {
+    const viewer = new Cesium.Viewer(container, {
       ...terrainOpts,
       baseLayerPicker: false,
       geocoder: false,
@@ -46,7 +46,7 @@ export async function createMapPanel(container, config) {
 
     // Center on Malaysia plantation region per existing default
     viewer.camera.setView({
-      destination: Rectangle.fromDegrees(101.5, 3.0, 101.9, 3.3)
+      destination: Cesium.Rectangle.fromDegrees(101.5, 3.0, 101.9, 3.3)
     });
 
     return { viewer };

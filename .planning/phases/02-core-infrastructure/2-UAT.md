@@ -1,5 +1,5 @@
 ---
-status: partial
+status: diagnosed
 phase: 02-core-infrastructure
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md
 started: 2026-04-20T14:26:27Z
@@ -68,9 +68,12 @@ blocked: 3
   reason: "User reported: The fallback message appears, but Cesium Initialization keeps failing. I've generated the Cesium ION tokens many times and even enabled whole permissions"
   severity: major
   test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: ".env file uses 'export' prefix (bash syntax) which Vite dotenv parser does not support. Token is never loaded into import.meta.env."
+  artifacts:
+    - path: ".env"
+      issue: "Lines use 'export KEY=value' instead of 'KEY=value'"
+  missing:
+    - "Remove 'export ' prefix from all VITE_ variables in .env"
   debug_session: ""
 
 - truth: "Three.js 3D viewport shows instanced tree meshes after confirming selection"
@@ -78,9 +81,12 @@ blocked: 3
   reason: "User reported: there is 3d simulation, but can't add plantation"
   severity: major
   test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "Cascading from Test 2 — without CesiumJS, no selection can be made, so plantation generation is never triggered (Start button requires state.phase === 'selected')"
+  artifacts:
+    - path: "src/app/createSimulationShell.js"
+      issue: "startBtn.disabled tied to state.phase !== 'selected' — unreachable without Cesium"
+  missing:
+    - "Fix .env (Test 2 fix) resolves this"
   debug_session: ""
 
 - truth: "Start, Stop, and Reset buttons all work correctly for simulation control"
@@ -88,7 +94,10 @@ blocked: 3
   reason: "User reported: Start and Stop can't be clicked. Reset can be clicked"
   severity: major
   test: 7
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "Cascading from Test 2 — Start disabled because phase stays 'idle' (never reaches 'selected'), Stop disabled because phase never reaches 'running'"
+  artifacts:
+    - path: "src/app/createSimulationShell.js:189-190"
+      issue: "startBtn.disabled = state.phase !== 'selected' && state.phase !== 'ready'; stopBtn.disabled = state.phase !== 'running'"
+  missing:
+    - "Fix .env (Test 2 fix) resolves this"
   debug_session: ""
