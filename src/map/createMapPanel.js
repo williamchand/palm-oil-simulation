@@ -15,7 +15,7 @@ export async function createMapPanel(container, config) {
     container.appendChild(
       createMessage(
         'Cesium token required',
-        'Set VITE_CESIUM_ION_TOKEN in .env.local to enable 3D terrain and imagery.'
+        'Set VITE_CESIUM_ION_TOKEN in .env to enable 3D terrain and imagery.'
       )
     );
     return { viewer: null };
@@ -23,9 +23,17 @@ export async function createMapPanel(container, config) {
 
   try {
     Ion.defaultAccessToken = config.cesiumToken;
+
+    // Try terrain first, fall back to default if Ion services unavailable
+    let terrainOpts = {};
+    try {
+      terrainOpts.terrain = await createWorldTerrainAsync();
+    } catch (terrainErr) {
+      console.warn('Cesium terrain unavailable, using default ellipsoid:', terrainErr.message);
+    }
     
     const viewer = new Viewer(container, {
-      terrain: await createWorldTerrainAsync(),
+      ...terrainOpts,
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
@@ -43,11 +51,11 @@ export async function createMapPanel(container, config) {
 
     return { viewer };
   } catch (error) {
-    console.error('Unable to initialize Cesium viewer', error);
+    console.error('Unable to initialize Cesium viewer:', error);
     container.replaceChildren(
       createMessage(
         'Cesium initialization failed',
-        'Check the token and network access. The panel stays mounted so the rest of the UI can continue working.'
+        `${error.message || 'Unknown error'}. Check the token and network access.`
       )
     );
     return { viewer: null };
