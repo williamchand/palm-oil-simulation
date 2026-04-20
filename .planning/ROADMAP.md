@@ -103,26 +103,35 @@ Plans:
 ### Phase 4: Visualization Layer (Hours 33-42)
 **Duration:** 10 hours
 **Objective:** Implement real-time visualization of AI activities and results
+**Goal:** Real-time fog-of-war heatmap, color-coded drone path trail, instanced scan markers, and auto-follow camera
+
+**Requirements:** VIZ_HEATMAP, VIZ_PATH, VIZ_COVERAGE, VIZ_CAMERA, VIZ_PERF
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Heatmap overlay, path trail, scan markers, auto-follow camera (D-21, D-22, D-23, D-24, D-25, D-26)
+- [ ] 04-02-PLAN.md — Shell integration, performance verification, human verification
 
 **Tasks:**
 - Implement real-time heatmap visualization for ripeness/disease
 - Create live display of drone path and scan points
-- Integrate AI reasoning display in the UI
-- Implement coverage area highlighting
+- Implement coverage area highlighting with fog-of-war
+- Add auto-follow camera with smooth lerp
 - Optimize visualization performance
 
 **Deliverables:**
-- Real-time heatmap visualization
-- Live drone path and scan point display
-- AI reasoning panel in UI
-- Coverage area visualization
-- Optimized rendering performance
+- Real-time canvas-based heatmap with fog-of-war reveal
+- Live drone path trail (BufferGeometry) with color-coded segments
+- Instanced scan point markers
+- Auto-follow camera with lerp tracking
+- Optimized rendering (<500ms updates, 1Hz heatmap throttle)
 
 **Success Criteria:**
 - Heatmap updates in real-time based on AI analysis
 - Drone path clearly visible and updated continuously
-- AI reasoning displayed in real-time
-- Coverage visualization works smoothly
+- Coverage visualization works smoothly with progressive reveal
+- Auto-follow camera tracks drone for demo impact
 - Visualizations maintain performance standards (<500ms updates)
 
 ---
