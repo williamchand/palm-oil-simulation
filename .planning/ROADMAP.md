@@ -110,7 +110,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Heatmap overlay, path trail, scan markers, auto-follow camera (D-21, D-22, D-23, D-24, D-25, D-26)
+- [x] 04-01-PLAN.md — Heatmap overlay, path trail, scan markers, auto-follow camera (D-21, D-22, D-23, D-24, D-25, D-26)
 - [ ] 04-02-PLAN.md — Shell integration, performance verification, human verification
 
 **Tasks:**
