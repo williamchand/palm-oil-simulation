@@ -44,7 +44,11 @@ export function createSimulationState() {
     route: null,
     coverage: 0,
     currentWaypointIndex: 0,
-    error: null
+    error: null,
+    aiDecisions: [],
+    reasoningLog: [],
+    anomalies: [],
+    aiStatus: 'idle'
   };
 
   /** @type {Set<(state: SimulationState) => void>} */
@@ -118,8 +122,32 @@ export function createSimulationState() {
       route: null,
       coverage: 0,
       currentWaypointIndex: 0,
-      error: null
+      error: null,
+      aiDecisions: [],
+      reasoningLog: [],
+      anomalies: [],
+      aiStatus: 'idle'
     };
+    notify();
+  }
+
+  function addAiDecision(waypointIndex, decision) {
+    state.aiDecisions = [...state.aiDecisions, { waypointIndex, decision, timestamp: Date.now() }];
+    notify();
+  }
+
+  function addReasoningEntry(entry) {
+    state.reasoningLog = [...state.reasoningLog, entry];
+    notify();
+  }
+
+  function addAnomaly(anomaly) {
+    state.anomalies = [...state.anomalies, { ...anomaly, timestamp: Date.now() }];
+    notify();
+  }
+
+  function setAiStatus(status) {
+    state.aiStatus = status;
     notify();
   }
 
@@ -133,6 +161,10 @@ export function createSimulationState() {
     setCurrentWaypoint,
     setError,
     subscribe,
-    reset
+    reset,
+    addAiDecision,
+    addReasoningEntry,
+    addAnomaly,
+    setAiStatus
   };
 }
