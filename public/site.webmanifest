@@ -1,0 +1,9 @@
+{
+  "name": "Gemma 4 Autonomous Drone Simulation",
+  "short_name": "Gemma4 Drone",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "description": "Phase 1 project scaffold for the Gemma 4 autonomous drone simulation."
+}
+
