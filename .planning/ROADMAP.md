@@ -40,7 +40,7 @@ Plans:
 - [x] 02-03-PLAN.md — Deterministic plantation generation (D-04, D-05, D-06)
 - [x] 02-04-PLAN.md — 3D scene rebuild from confirmed selection (D-07, D-08)
 - [x] 02-05-PLAN.md — Sweep path and terrain-aware altitude (D-09, D-11)
-- [ ] 02-06-PLAN.md — Full integration and human verification (D-03, D-10)
+- [x] 02-06-PLAN.md — Full integration and human verification (D-03, D-10)
 
 **Tasks:**
 - Replace ArcGIS with CesiumJS map interface with draggable rectangle selection
