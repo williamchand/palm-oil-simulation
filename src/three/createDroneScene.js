@@ -13,6 +13,7 @@ import {
   SRGBColorSpace,
   WebGLRenderer
 } from 'three';
+import { createSceneBuilder } from './helpers/sceneBuilder.js';
 
 function createGroundTexture() {
   const canvas = document.createElement('canvas');
@@ -47,6 +48,7 @@ function createGroundTexture() {
 
 function createDrone() {
   const group = new Group();
+  group.name = 'drone';
 
   const body = new Mesh(
     new BoxGeometry(1.6, 0.35, 0.7),
@@ -60,11 +62,17 @@ function createDrone() {
   sensor.position.y = 0.3;
 
   group.add(body, sensor);
-  group.position.y = 1.1;
+  group.position.y = 1.5;
 
   return group;
 }
 
+/**
+ * Creates 3D drone scene with controller for rebuild and animation.
+ * 
+ * @param {HTMLElement} container
+ * @returns {{rebuild: Function, setDronePosition: Function, stop: Function, resume: Function}}
+ */
 export function createDroneScene(container) {
   const scene = new Scene();
   scene.background = new Color('#07111f');
@@ -72,9 +80,9 @@ export function createDroneScene(container) {
   const width = container.clientWidth || 640;
   const height = container.clientHeight || 360;
 
-  const camera = new PerspectiveCamera(50, width / height, 0.1, 100);
-  camera.position.set(3, 2.8, 4.2);
-  camera.lookAt(0, 0.8, 0);
+  const camera = new PerspectiveCamera(50, width / height, 0.1, 1000);
+  camera.position.set(15, 12, 20);
+  camera.lookAt(0, 0, 0);
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -84,7 +92,8 @@ export function createDroneScene(container) {
   const ambient = new AmbientLight('#ffffff', 1.6);
   scene.add(ambient);
 
-  const ground = new Mesh(
+  // Default ground (shown before plantation is loaded)
+  const defaultGround = new Mesh(
     new PlaneGeometry(12, 12),
     new MeshStandardMaterial({
       map: createGroundTexture(),
@@ -92,15 +101,34 @@ export function createDroneScene(container) {
       roughness: 1
     })
   );
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
+  defaultGround.rotation.x = -Math.PI / 2;
+  defaultGround.name = 'defaultGround';
+  scene.add(defaultGround);
 
   const drone = createDrone();
   scene.add(drone);
 
+  const sceneBuilder = createSceneBuilder(scene);
+
+  let animationActive = true;
+  let routeWaypoints = null;
+  let currentWaypointIndex = 0;
+  let animationProgress = 0;
+
   const animate = () => {
-    drone.rotation.y += 0.01;
-    drone.position.x = Math.sin(performance.now() * 0.001) * 0.35;
+    if (!animationActive) {
+      renderer.render(scene, camera);
+      return;
+    }
+
+    // Default idle animation when no route
+    if (!routeWaypoints) {
+      drone.rotation.y += 0.01;
+      drone.position.x = Math.sin(performance.now() * 0.001) * 0.35;
+    } else {
+      // Route-based animation handled by startAnimation
+    }
+
     renderer.render(scene, camera);
     window.requestAnimationFrame(animate);
   };
@@ -110,11 +138,62 @@ export function createDroneScene(container) {
   const resizeObserver = new ResizeObserver(([entry]) => {
     const nextWidth = entry.contentRect.width;
     const nextHeight = entry.contentRect.height;
-
     renderer.setSize(nextWidth, nextHeight);
     camera.aspect = nextWidth / nextHeight;
     camera.updateProjectionMatrix();
   });
-
   resizeObserver.observe(container);
+
+  return {
+    /**
+     * Rebuilds scene from plantation data. Clears existing content first.
+     * @param {import('../types/plantation.js').PlantationData} plantationData
+     */
+    rebuild(plantationData) {
+      // Hide default ground when plantation is loaded
+      defaultGround.visible = false;
+      sceneBuilder.rebuild(plantationData);
+
+      // Adjust camera to fit plantation
+      const bounds = sceneBuilder.getPlantationBounds();
+      if (bounds) {
+        camera.position.set(
+          bounds.centerX + bounds.width * 0.8,
+          bounds.height * 0.6,
+          bounds.centerZ + bounds.height * 0.8
+        );
+        camera.lookAt(bounds.centerX, 0, bounds.centerZ);
+      }
+
+      // Reset drone to origin
+      drone.position.set(0, 1.5, 0);
+    },
+
+    /**
+     * Sets drone position in scene units.
+     * @param {number} x
+     * @param {number} z 
+     * @param {number} altitude
+     */
+    setDronePosition(x, z, altitude) {
+      drone.position.set(x * 0.1, altitude * 0.1, z * 0.1);
+    },
+
+    /**
+     * Stops animation loop.
+     */
+    stop() {
+      animationActive = false;
+    },
+
+    /**
+     * Resumes animation loop.
+     */
+    resume() {
+      if (!animationActive) {
+        animationActive = true;
+        animate();
+      }
+    }
+  };
 }
