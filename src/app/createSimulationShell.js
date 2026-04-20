@@ -18,7 +18,7 @@ function buildShellMarkup(config) {
     <div class="shell">
       <header class="shell__header">
         <div>
-          <p class="eyebrow">Phase 3 AI Integration</p>
+          <p class="eyebrow">Phase 4 Visualization</p>
           <h1>Gemma 4 Autonomous Drone Simulation</h1>
           <p class="shell__subtitle">
             Area selection, plantation generation, and automated sweep path.
@@ -270,6 +270,19 @@ export function createSimulationShell(root) {
         // Fire-and-forget AI inference at this waypoint (D-13: async, non-blocking)
         const currentWaypoint = waypoints[waypointIndex];
         aiLoop.onWaypoint(currentWaypoint, plantation, route, waypointIndex);
+
+        // Reveal heatmap around this waypoint (D-21, D-24)
+        const nearbyTrees = plantation.trees.filter(tree => {
+          const tdx = tree.x - currentWaypoint.x;
+          const tdy = tree.y - currentWaypoint.y;
+          return (tdx * tdx + tdy * tdy) <= 900; // 30m radius squared
+        });
+        const currentAnomalies = simState.getState().anomalies.filter(
+          a => a.waypointIndex === waypointIndex
+        );
+        sceneController.revealHeatmap(
+          currentWaypoint.x, currentWaypoint.y, nearbyTrees, currentAnomalies
+        );
       }
 
       const x = current.x + dx * progress;
@@ -277,6 +290,13 @@ export function createSimulationShell(root) {
       const altitude = current.altitude + (next.altitude - current.altitude) * progress;
       
       sceneController.setDronePosition(x, y, altitude);
+
+      // Add trail point for current interpolated position
+      const currentAction = current.action;
+      const hasAnomaly = simState.getState().anomalies.some(
+        a => a.waypointIndex === waypointIndex
+      );
+      sceneController.addTrailPoint(x, y, altitude, currentAction, hasAnomaly);
 
       animationFrameId = requestAnimationFrame(tick);
     }
@@ -335,6 +355,7 @@ export function createSimulationShell(root) {
       selectionController.clear();
     }
     sceneController.rebuild(null); // Clear scene
+    sceneController.resetVisualization();
 
     // Clear reasoning panel display and re-add boot entry
     if (reasoningPanelEl._reasoningPanel) {
