@@ -68,6 +68,16 @@ Plans:
 ### Phase 3: AI Integration (Hours 17-32)
 **Duration:** 16 hours
 **Objective:** Integrate Gemma 4 AI for autonomous drone decision-making
+**Goal:** AI-powered autonomous drone decisions at each scan waypoint with structured reasoning display
+
+**Requirements:** AI_PERCEPTION, AI_DECISION, AI_ADAPTIVE, AI_DISPLAY
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — AI types, perception builder, prompt engineering, Gemma API client with mock fallback
+- [ ] 03-02-PLAN.md — Decision engine, simulation state AI extension, async per-waypoint AI loop
+- [ ] 03-03-PLAN.md — Reasoning panel UI, shell integration, human verification
 
 **Tasks:**
 - Integrate Gemma 4 model for AI processing
