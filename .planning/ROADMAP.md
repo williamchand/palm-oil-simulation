@@ -76,7 +76,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — AI types, perception builder, prompt engineering, Gemma API client with mock fallback
-- [ ] 03-02-PLAN.md — Decision engine, simulation state AI extension, async per-waypoint AI loop
+- [x] 03-02-PLAN.md — Decision engine, simulation state AI extension, async per-waypoint AI loop
 - [ ] 03-03-PLAN.md — Reasoning panel UI, shell integration, human verification
 
 **Tasks:**
