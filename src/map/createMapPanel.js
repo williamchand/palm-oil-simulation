@@ -1,16 +1,4 @@
-async function loadArcGisModules() {
-  const [arcgisConfigModule, MapModule, MapViewModule] = await Promise.all([
-    import('@arcgis/core/config.js'),
-    import('@arcgis/core/Map.js'),
-    import('@arcgis/core/views/MapView.js')
-  ]);
-
-  return {
-    arcgisConfig: arcgisConfigModule.default,
-    ArcGisMap: MapModule.default,
-    MapView: MapViewModule.default
-  };
-}
+import { Viewer, Ion, createWorldTerrainAsync, Rectangle } from 'cesium';
 
 function createMessage(title, description) {
   const wrapper = document.createElement('div');
@@ -23,43 +11,46 @@ function createMessage(title, description) {
 }
 
 export async function createMapPanel(container, config) {
-  if (!config.arcgisApiKey) {
+  if (!config.cesiumToken) {
     container.appendChild(
       createMessage(
-        'ArcGIS key required',
-        'Add VITE_ARCGIS_API_KEY to initialize the live basemap. The layout is ready for Phase 2 area selection work.'
+        'Cesium token required',
+        'Set VITE_CESIUM_ION_TOKEN in .env.local to enable 3D terrain and imagery.'
       )
     );
-    return;
+    return { viewer: null };
   }
 
   try {
-    const { arcgisConfig, ArcGisMap, MapView } = await loadArcGisModules();
-    arcgisConfig.apiKey = config.arcgisApiKey;
-
-    const map = new ArcGisMap({
-      basemap: 'topo-vector'
+    Ion.defaultAccessToken = config.cesiumToken;
+    
+    const viewer = new Viewer(container, {
+      terrain: await createWorldTerrainAsync(),
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false
     });
 
-    const view = new MapView({
-      container,
-      map,
-      center: [101.6869, 3.139],
-      zoom: 11,
-      ui: {
-        components: ['zoom', 'compass']
-      }
+    // Center on Malaysia plantation region per existing default
+    viewer.camera.setView({
+      destination: Rectangle.fromDegrees(101.5, 3.0, 101.9, 3.3)
     });
 
-    await view.when();
+    return { viewer };
   } catch (error) {
-    console.error('Unable to initialize ArcGIS map', error);
+    console.error('Unable to initialize Cesium viewer', error);
     container.replaceChildren(
       createMessage(
-        'ArcGIS initialization failed',
-        'Check the API key and network access. The panel stays mounted so the rest of the UI can continue working.'
+        'Cesium initialization failed',
+        'Check the token and network access. The panel stays mounted so the rest of the UI can continue working.'
       )
     );
+    return { viewer: null };
   }
 }
 

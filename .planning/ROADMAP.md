@@ -28,25 +28,40 @@
 ### Phase 2: Core Infrastructure (Hours 5-16)
 **Duration:** 12 hours
 **Objective:** Build the foundational components of the system
+**Goal:** CesiumJS-based area selection, deterministic plantation generation, 3D scene rebuild, and automated terrain-aware drone sweep
+
+**Requirements:** AREA_SELECTION, PROC_GEN, DRONE_SIM, DETERMINISTIC, TERRAIN, INTER_COMPONENT
+
+**Plans:** 6 plans
+
+Plans:
+- [x] 02-01-PLAN.md — Wave 0: Test infrastructure and type contracts
+- [x] 02-02-PLAN.md — CesiumJS integration and rectangle selection (D-01, D-02)
+- [x] 02-03-PLAN.md — Deterministic plantation generation (D-04, D-05, D-06)
+- [x] 02-04-PLAN.md — 3D scene rebuild from confirmed selection (D-07, D-08)
+- [x] 02-05-PLAN.md — Sweep path and terrain-aware altitude (D-09, D-11)
+- [ ] 02-06-PLAN.md — Full integration and human verification (D-03, D-10)
 
 **Tasks:**
-- Implement ArcGIS map interface with area selection capability
-- Develop procedural world generation algorithm for plantation
-- Create 3D environment foundation using Three.js
-- Set up communication layer between different system components
-- Implement basic drone model and movement mechanics
+- Replace ArcGIS with CesiumJS map interface with draggable rectangle selection
+- Develop deterministic procedural plantation generation with seeded random
+- Implement 3D scene rebuild from confirmed selection with instanced tree meshes
+- Create sweep path generator and terrain sampling service
+- Wire all components through shared simulation state
 
 **Deliverables:**
-- Functional map interface with area selection
-- Procedural plantation generator
-- Basic 3D environment with drone model
-- Inter-component communication system
+- Functional CesiumJS map with rectangle area selection
+- Deterministic procedural plantation generator
+- 3D scene controller with rebuild capability
+- Terrain-aware automated sweep path
+- Integrated simulation flow with graceful degradation
 
 **Success Criteria:**
-- User can select an area on the map
-- System generates plantation based on selected area
-- Drone can be placed and moved in 3D space
-- Components can communicate with each other
+- User can draw and confirm rectangle selection on CesiumJS map
+- Same selection always generates identical plantation (deterministic)
+- 3D scene rebuilds from full-area plantation data after confirmation
+- Drone follows predictable sweep pattern with terrain-aware altitude
+- Missing credentials show graceful fallback (no crash)
 
 ---
 
